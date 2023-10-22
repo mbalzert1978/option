@@ -1,14 +1,65 @@
-# option in python
-Type Option represents an optional value:
-- every Option is either Some and contains a value, or maybe, and does not.
-- Option types are very common in Rust code, as they have a number of uses:
+Some(value), Maybe(None)
 
-* Initial values
-* Return values for functions that are not defined over their entire input range (partial functions)
-* Return value for otherwise reporting simple errors, where None is returned on error
-* Optional struct fields
-* Struct fields that can be loaned or “taken”
-* Optional function arguments
-* Nullable pointers
-* Swapping things out of difficult situations
-* Options are commonly paired with pattern matching to query the presence of a value and take action, always accounting for the None case.
+A simple Option type for Python 3 inspired by Rust, fully type annotated.
+
+Installation
+============
+
+Latest release:
+
+$ pip install option
+
+Latest GitHub master branch version:
+
+$ pip install git+https://github.com/mbalzert1978/option
+
+Summary
+=======
+
+The idea is that a option can be either Some(value) or Maybe(None), with a way to differentiate between the two. Some and Maybe are both classes encapsulating an arbitrary value.
+
+API
+===
+
+Creating an instance:
+``` python
+>>> from option import Some, Maybe
+>>> value = Some(42)
+>>> no_value = Maybe(None)
+# Checking whether a result is Some or Maybe:
+
+>>> value.is_some()
+True
+>>> no_value.is_none()
+True
+
+Accessing the Value:
+
+>>> unwrapped = value.unwrap()
+42
+# This will raise an exception:
+unwrapped = no_value.unwrap()
+
+Handling the Absence of Value:
+
+>>> unwrapped = value.unwrap_or(0)
+42
+default_value = no_value.unwrap_or(0)
+0
+
+Mapping and Transforming Values:
+
+>>> transformed = value.map(lambda x: x * 2)
+84
+# Mapping a Maybe does nothing:
+transformed = no_value.map(lambda x: x * 2)
+True
+```
+
+Contributing
+
+Contributions to option are welcome. You can find the source code on GitHub and submit pull requests.
+
+License
+
+option is available under the MIT License.
