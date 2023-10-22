@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-# from src.option import Maybe, Option, Some
-# from src.option.option import Maybe, Option, Some, UnwrapError, as_async_option, as_option
-from src.option import Option, Some, UnwrapError, as_async_option, as_option, Maybe
+from option import Maybe, Option, Some, UnwrapError, as_async_option, as_option
+
+
 def test_pattern_matching_on_ok_type() -> None:
     o: Option[str, int] = Some("yay")
     match o:

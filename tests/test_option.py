@@ -5,9 +5,9 @@ from typing import Callable
 
 import pytest
 
-# from src.option import Maybe, Option, Some, UnwrapError, as_async_option, as_option
-# from src.option.option import Maybe, Option, Some, UnwrapError, as_async_option, as_option
-from src.option import Option, Some, Maybe, as_option, as_async_option, UnwrapError
+from option import Maybe, Option, Some, UnwrapError, as_async_option, as_option
+
+
 def test_ok_factories() -> None:
     instance: Option = Some(1)
     assert instance._value == 1
