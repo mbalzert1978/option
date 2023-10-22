@@ -33,27 +33,27 @@ True
 >>> no_value.is_none()
 True
 
-Accessing the Value:
+# Accessing the Value:
 
 >>> unwrapped = value.unwrap()
 42
 # This will raise an exception:
 unwrapped = no_value.unwrap()
 
-Handling the Absence of Value:
+# Handling the Absence of Value:
 
 >>> unwrapped = value.unwrap_or(0)
 42
 default_value = no_value.unwrap_or(0)
 0
 
-Mapping and Transforming Values:
+# Mapping and Transforming Values:
 
 >>> transformed = value.map(lambda x: x * 2)
-84
+Some(84)
 # Mapping a Maybe does nothing:
 transformed = no_value.map(lambda x: x * 2)
-True
+Maybe(None)
 ```
 
 Contributing
