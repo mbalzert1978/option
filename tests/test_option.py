@@ -12,12 +12,14 @@ def test_ok_factories() -> None:
     instance: Option = Some(1)
     assert instance._value == 1
     assert instance.is_some() is True
+    assert instance.is_none() is False
 
 
 def test_err_factories() -> None:
     instance: Option = Maybe(2)
     assert instance._value is None
     assert instance.is_none() is True
+    assert instance.is_some() is False
 
 
 def test_eq() -> None:
@@ -47,42 +49,6 @@ def test_repr() -> None:
     assert n == eval(repr(n))
 
 
-def test_value() -> None:
-    some: Option = Some("haha")
-    maybe: Option = Maybe("haha")
-
-    assert some.value == "haha"
-    assert maybe.value is None
-
-
-def test_some() -> None:
-    opt: Option = Some("haha")
-    assert opt.is_some() is True
-    assert opt.is_none() is False
-    assert opt.value == "haha"
-
-
-def test_maybe() -> None:
-    opt: Option = Maybe(":(")
-    assert opt.is_some() is False
-    assert opt.is_none() is True
-    assert opt.value is None
-
-
-def test_some_method() -> None:
-    o: Option = Some("yay")
-    n: Option = Maybe("nay")
-    assert o.some() == "yay"
-    assert n.some() is None
-
-
-def test_none_method() -> None:
-    o: Option = Some("yay")
-    n: Option = Maybe("nay")
-    assert o.none() is None
-    assert n.none() is None
-
-
 def test_expect() -> None:
     o: Option = Some("yay")
     n: Option = Maybe("nay")
@@ -91,26 +57,12 @@ def test_expect() -> None:
         n.expect("failure")
 
 
-def test_expect_none() -> None:
-    o: Option = Some("yay")
-    n: Option = Maybe("nay")
-    assert n.expect_none("hello") is None
-    with pytest.raises(UnwrapError):
-        o.expect_none("hello")
-
-
 def test_unwrap() -> None:
     o: Option = Some("yay")
     n: Option = Maybe("nay")
     assert o.unwrap() == "yay"
     with pytest.raises(UnwrapError):
         n.unwrap()
-def test_unwrap_none() -> None:
-    o: Option = Some("yay")
-    n: Option = Maybe("nay")
-    assert n.unwrap_none() is None
-    with pytest.raises(UnwrapError):
-        o.unwrap_none()
 
 
 def test_unwrap_or() -> None:
@@ -139,13 +91,13 @@ def test_unwrap_or_raise() -> None:
 def test_map() -> None:
     o: Option = Some("yay")
     n: Option = Maybe("nay")
-    assert o.map(str.upper).some() == "YAY"
-    assert n.map(str.upper).none() is None
+    assert o.map(str.upper).unwrap() == "YAY"
+    assert n.map(str.upper).is_none() is True
 
     num: Option = Some(3)
     none_num: Option = Maybe(2)
-    assert num.map(str).some() == "3"
-    assert none_num.map(str).none() is None
+    assert num.map(str).unwrap() == "3"
+    assert none_num.map(str).is_none() is True
 
 
 def test_map_or() -> None:
@@ -161,43 +113,43 @@ def test_map_or() -> None:
 
 
 def test_map_or_else() -> None:
+    k = 21
     o: Option = Some("yay")
     n: Option = Maybe("nay")
-    assert o.map_or_else("hay", str.upper) == "YAY"
-    assert n.map_or_else("hay", str) == "None"
-    assert n.map_or_else("hay", lambda _: None) == "hay"
+    assert o.map_or_else(lambda: 2 * k, str.upper) == "YAY"
+    assert n.map_or_else(lambda: 2 * k, str.upper) == 42
 
     num: Option = Some(3)
     none_num: Option = Maybe(2)
-    assert num.map_or_else("-1", str) == "3"
-    assert none_num.map_or_else("-1", str) == "None"
-    assert none_num.map_or_else("-1", lambda _: None) == "-1"
+    assert num.map_or_else(lambda: 2 * k, str) == "3"
+    assert none_num.map_or_else(lambda: 2 * k, str) == 42
 
 
 def test_and_then() -> None:
     start: Option = Some(2)
-    assert start.and_then(sq).and_then(sq).some() == 16
-    assert start.and_then(sq).and_then(to_maybe).some() is None
-    assert start.and_then(to_maybe).and_then(sq).some() is None
+    assert start.and_then(sq).and_then(sq).unwrap() == 16
+    assert start.and_then(sq).and_then(to_maybe).is_none() is True
+    assert start.and_then(to_maybe).and_then(sq).is_none() is True
 
-    assert start.and_then(sq_lambda).and_then(sq_lambda).some() == 16
-    assert start.and_then(sq_lambda).and_then(to_err_lambda).some() is None
-    assert start.and_then(to_err_lambda).and_then(sq_lambda).some() is None
+    assert start.and_then(sq_lambda).and_then(sq_lambda).unwrap() == 16
+    assert start.and_then(sq_lambda).and_then(to_err_lambda).is_none() is True
+    assert start.and_then(to_err_lambda).and_then(sq_lambda).is_none() is True
 
 
 def test_or_else() -> None:
-    start: Option = Some(2)
-    sq2 = partial(sq, i=2)
-    assert start.or_else(sq2).or_else(sq2).some() == 2
-    assert start.or_else(partial(to_maybe, i=2)).or_else(sq).some() == 2
 
-    assert start.or_else(sq_lambda).or_else(sq).some() == 2
-    assert start.or_else(to_err_lambda).or_else(sq_lambda).some() == 2
+    def nobody():
+        return Maybe(None)
 
-def test_or_else_maybe() -> None:
-    start:Option = Maybe(2)
+    def vikings():
+        return Some("vikings")
 
-    assert start.or_else(lambda:"2") == "2"
+    assert Some("barbarians").or_else(vikings).unwrap() == "barbarians"
+    assert Maybe(None).or_else(vikings).unwrap() == "vikings"
+    assert Maybe(None).or_else(nobody).is_none() is True
+
+
+
 
 
 def test_isinstance_result_type() -> None:
@@ -228,7 +180,7 @@ def test_slots() -> None:
         n.some_arbitrary_attribute = 1  # type: ignore[attr-defined]
 
 
-def test_as_result() -> None:
+def test_as_option() -> None:
     """
     ``as_option()`` turns functions into ones that return a ``Option``.
     """
@@ -247,12 +199,12 @@ def test_as_result() -> None:
     assert isinstance(good_result, Some)
     assert good_result.unwrap() == 123
     assert isinstance(bad_result, Maybe)
-    assert bad_result.unwrap_none() is None
+    assert bad_result.is_none() is True
 
 
-def test_as_result_type_checking() -> None:
+def test_as_option_type_checking() -> None:
     """
-    The ``as_result()`` is a signature-preserving decorator.
+    The ``as_option()`` is a signature-preserving decorator.
     """
 
     @as_option
@@ -261,13 +213,13 @@ def test_as_result_type_checking() -> None:
 
     res: Option[int, None]
     res = f(123)  # No mypy error here.
-    assert res.some() == 123
+    assert res.unwrap() == 123
 
 
 @pytest.mark.asyncio()
-async def test_as_async_result() -> None:
+async def test_as_as_option() -> None:
     """
-    ``as_async_result()`` turns functions into ones that return a ``Result``.
+    ``as_as_option()`` turns functions into ones that return a ``Option``.
     """
 
     @as_async_option
@@ -284,7 +236,7 @@ async def test_as_async_result() -> None:
     assert isinstance(good_result, Some)
     assert good_result.unwrap() == 123
     assert isinstance(bad_result, Maybe)
-    assert bad_result.unwrap_none() is None
+    assert bad_result.is_none() is True
 
 
 def sq(i: int) -> Option[int, int]:
