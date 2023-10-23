@@ -4,7 +4,7 @@ from option import Maybe, Option, Some, UnwrapError, as_async_option, as_option
 
 
 def test_pattern_matching_on_ok_type() -> None:
-    o: Option[str, int] = Some("yay")
+    o = Some("yay")
     match o:
         case Some(value):
             reached = True
@@ -14,7 +14,7 @@ def test_pattern_matching_on_ok_type() -> None:
 
 
 def test_pattern_matching_on_err_type() -> None:
-    n: Option[int, str] = Maybe("nay")
+    n = Maybe("nay")
     match n:
         case Maybe(value):
             reached = True
