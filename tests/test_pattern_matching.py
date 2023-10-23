@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from option import Maybe, Option, Some, UnwrapError, as_async_option, as_option
+from option import Maybe, Some
 
 
 def test_pattern_matching_on_ok_type() -> None:
