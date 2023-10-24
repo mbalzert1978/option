@@ -220,7 +220,7 @@ async def test_as_as_option() -> None:
         return value
 
     @as_async_option
-    async def bad(value: int) -> int:
+    async def bad(_: int) -> int:
         return None
 
     good_result = await good(123)
