@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 
 import pytest
-from result import Result
+from result import Err, Ok
 
 from option import Null, Option, Some, UnwrapFailedError
 
@@ -21,116 +21,230 @@ def sq_then_to_string(x: int) -> str | None:
         return None
 
 
-def test_and_then_when_value_should_call_the_given_function_or_return_none() -> None:
-    err = "Not a number"
-    assert Some(2).and_then(sq_then_to_string) == Some("4")
-    assert Null(err).and_then(sq_then_to_string) == Null(err)
+@pytest.mark.parametrize(
+    "option, func, expected",
+    [
+        (Some(2), sq_then_to_string, Some("4")),
+        (Null("Not a number"), sq_then_to_string, Null("Not a number")),
+    ],
+    ids=[
+        "test_and_then_when_some_should_call_function",
+        "test_and_then_when_null_should_return_null",
+    ],
+)
+def test_and_then_when_value_should_call_the_given_function_or_return_none(
+    option, func, expected
+) -> None:
+    assert option.and_then(func) == expected
 
 
-def test_expect_when_value_should_return_the_value_or_throws_an_error_with_the_given_message():
+def test_expect_when_some_should_return_value() -> None:
+    option = Some(10)
     msg = "Something went wrong"
-    assert Some(10).expect(msg) == 10
+    expected = 10
+    assert option.expect(msg) == expected
+
+
+def test_expect_when_null_should_raise_error() -> None:
+    option = Null("Emergency failure")
+    msg = "Something went wrong"
     with pytest.raises(UnwrapFailedError, match=msg):
-        Null("Emergency failure").expect(msg)
+        option.expect(msg)
 
 
-def test_option_filter_when_predicate_is_called_should_return_some_if_true_and_null_if_false() -> (
-    None
+@pytest.mark.parametrize(
+    "option, predicate, expected",
+    [
+        (Some(10), lambda x: x % 2 == 0, Some(10)),
+        (Some(15), lambda x: x % 2 == 0, Null(None)),
+        (Null(10), lambda x: x % 2 == 0, Null(10)),
+    ],
+    ids=[
+        "test_filter_when_some_and_predicate_true_should_return_some",
+        "test_filter_when_some_and_predicate_false_should_return_null",
+        "test_filter_when_null_should_return_null",
+    ],
+)
+def test_option_filter_when_predicate_is_called_should_return_some_if_true_and_null_if_false(
+    option, predicate, expected
+) -> None:
+    assert option.filter(predicate) == expected
+
+
+@pytest.mark.parametrize(
+    "option, expected",
+    [
+        (Null(10), True),
+        (Some(10), False),
+    ],
+    ids=[
+        "test_is_null_when_null_should_return_true",
+        "test_is_null_when_some_should_return_false",
+    ],
+)
+def test_is_null_when_null_value_should_return_true(option, expected) -> None:
+    assert option.is_null() == expected
+
+
+@pytest.mark.parametrize(
+    "option, expected",
+    [
+        (Null(10), False),
+        (Some(10), True),
+    ],
+    ids=[
+        "test_is_some_when_null_should_return_false",
+        "test_is_some_when_some_should_return_true",
+    ],
+)
+def test_is_some_when_value_should_return_true(option, expected) -> None:
+    assert option.is_some() == expected
+
+
+@pytest.mark.parametrize(
+    "option, predicate, expected",
+    [
+        (Some(10), lambda x: x % 2 == 0, True),
+        (Some(15), lambda x: x % 2 == 0, False),
+        (Null("Something went wrong"), lambda x: x % 2 == 0, False),
+    ],
+    ids=[
+        "test_is_some_and_when_some_and_predicate_true_should_return_true",
+        "test_is_some_and_when_some_and_predicate_false_should_return_false",
+        "test_is_some_and_when_null_should_return_false",
+    ],
+)
+def test_is_some_and_when_some_value_should_match_predicate(
+    option, predicate, expected
+) -> None:
+    assert option.is_some_and(predicate) == expected
+
+
+@pytest.mark.parametrize(
+    "option, func, expected",
+    [
+        (Some(10), lambda i: i * 2, Some(20)),
+        (Null("Nothing here"), lambda i: i * 2, Null("Nothing here")),
+    ],
+    ids=[
+        "test_map_when_some_should_apply_function",
+        "test_map_when_null_should_return_null",
+    ],
+)
+def test_map_on_option_should_map_option_te_to_option_ue_by_applying_a_function_to_a_contained_some_value_leaving_an_null_untouched(
+    option, func, expected
+) -> None:
+    assert option.map(func) == expected
+
+
+@pytest.mark.parametrize(
+    "option, default, func, expected",
+    [
+        (Some("foo"), 42, lambda v: len(v), 3),
+        (Null("bar"), 42, lambda v: len(v), 42),
+    ],
+    ids=[
+        "test_map_or_when_some_should_apply_function",
+        "test_map_or_when_null_should_return_default",
+    ],
+)
+def test_map_or_when_option_should_apply_a_function_to_contained_value_or_default(
+    option, default, func, expected
 ):
-    assert Some(10).filter(lambda x: x % 2 == 0) == Some(10)
-    assert Some(15).filter(lambda x: x % 2 == 0) == Null(None)
-    assert Null(10).filter(lambda x: x % 2 == 0) == Null(10)
+    assert option.map_or(default, func) == expected
 
 
-def test_is_null_when_null_value_should_return_true() -> None:
-    assert Null(10).is_null()
-    assert not Some(10).is_null()
-
-
-def test_is_some_when_value_should_return_true() -> None:
-    assert not Null(10).is_some()
-    assert Some(10).is_some()
-
-
-def test_is_some_and_when_some_value_should_match_predicate() -> None:
-    assert Some(10).is_some_and(lambda x: x % 2 == 0)
-    assert not Some(15).is_some_and(lambda x: x % 2 == 0)
-    assert not Null("Something went wrong").is_some_and(lambda x: x % 2 == 0)
-
-
-def test_map_on_option_should_map_option_te_to_option_ue_by_applying_a_function_to_a_contained_some_value_leaving_an_null_untouched() -> (
-    None
+@pytest.mark.parametrize(
+    "option, default_func, func, expected",
+    [
+        (Some("foo"), lambda: 21 * 2, lambda v: len(v), 3),
+        (Null("bar"), lambda: 21 * 2, lambda v: len(v), 42),
+    ],
+    ids=[
+        "test_map_or_else_when_some_should_apply_function",
+        "test_map_or_else_when_null_should_apply_default_function",
+    ],
+)
+def test_map_or_else_when_option_should_apply_a_function_to_contained_value_or_apply_fallback_function(
+    option, default_func, func, expected
 ):
-    msg = "Nothing here"
-    assert Some(10).map(lambda i: i * 2) == Some(20)
-    assert Null(msg).map(lambda i: i * 2) == Null(msg)
+    assert option.map_or_else(default_func, func) == expected
 
 
-def test_map_or_when_option_should_apply_a_function_to_contained_value_or_default():
-    assert Some("foo").map_or(42, lambda v: len(v)) == 3
-    assert Null("bar").map_or(42, lambda v: len(v)) == 42
+@pytest.mark.parametrize(
+    "option, msg, expected",
+    [
+        (Some(10), "Something went wrong", Ok(10)),
+        (Null(10), "Something went wrong", Err("Something went wrong")),
+    ],
+    ids=[
+        "test_ok_or_when_some_should_return_ok",
+        "test_ok_or_when_null_should_return_err",
+    ],
+)
+def test_option_ok_or_when_called_should_map_option_to_result(
+    option, msg, expected
+) -> None:
+    assert option.ok_or(msg) == expected
 
 
-def test_map_or_else_when_option_should_apply_a_function_to_contained_value_or_apply_fallback_function():
-    k = 21
-    assert Some("foo").map_or_else(lambda: k * 2, lambda v: len(v)) == 3
-    assert Null("bar").map_or_else(lambda: k * 2, lambda v: len(v)) == 42
+@pytest.mark.parametrize(
+    "option, msg_func, expected",
+    [
+        (Some(10), lambda: "Something went wrong", Ok(10)),
+        (Null(10), lambda: "Something went wrong", Err("Something went wrong")),
+    ],
+    ids=[
+        "test_ok_or_else_when_some_should_return_ok",
+        "test_ok_or_else_when_null_should_return_err",
+    ],
+)
+def test_option_ok_or_else_when_called_should_map_some_to_ok_and_null_to_err(
+    option, msg_func, expected
+) -> None:
+    assert option.ok_or_else(msg_func) == expected
 
 
-def test_option_ok_or_when_called_should_map_option_to_result() -> None:
-    msg = "Something went wrong"
-    assert Some(10).ok_or(msg) == Result.Ok(10)
-    assert Null(10).ok_or(msg) == Result.Err(msg)
+@pytest.mark.parametrize(
+    "option1, option2, expected",
+    [
+        (Some(2), Null(None), Some(2)),
+        (Null(None), Some(100), Some(100)),
+        (Some(2), Some(100), Some(2)),
+        (Null(None), Null(None), Null(None)),
+    ],
+    ids=[
+        "test_or_when_some_should_return_some",
+        "test_or_when_null_should_return_other_option",
+        "test_or_when_both_some_should_return_first",
+        "test_or_when_both_null_should_return_null",
+    ],
+)
+def test_option_or_when_called_should_return_option_if_contained_value_otherwise_optb(
+    option1, option2, expected
+) -> None:
+    assert option1.or_(option2) == expected
 
 
-def test_option_ok_or_else_when_called_should_map_some_to_ok_and_null_to_err() -> None:
-    msg = "Something went wrong"
-    assert Some(10).ok_or_else(lambda: msg) == Result.Ok(10)
-    assert Null(10).ok_or_else(lambda: msg) == Result.Err(msg)
-
-
-def test_option_or_when_called_should_return_option_if_contained_value_otherwise_optb() -> (
-    None
+@pytest.mark.parametrize(
+    "option, func, expected",
+    [
+        (Some(2), lambda: Some(100), Some(2)),
+        (Some(2), lambda: Null(0), Some(2)),
+        (Null(3), lambda: Some(100), Some(100)),
+        (Null(3), lambda: Null(0), Null(0)),
+    ],
+    ids=[
+        "test_or_else_when_some_should_return_some",
+        "test_or_else_when_some_should_return_some_even_if_func_returns_null",
+        "test_or_else_when_null_should_call_func_and_return_some",
+        "test_or_else_when_null_should_call_func_and_return_null",
+    ],
+)
+def test_or_else_when_null_should_call_the_given_function_or_return_the_some_value(
+    option, func, expected
 ):
-    assert Some(2).or_(Null(None)) == Some(2)
-    assert Null(None).or_(Some(100)) == Some(100)
-    assert Some(2).or_(Some(100)) == Some(2)
-    assert Null(None).or_(Null(None)) == Null(None)
-
-
-def test_or_else_when_null_should_call_the_given_function_or_return_the_some_value():
-    assert Some(2).or_else(lambda: Some(100)).or_else(lambda: Some(100)) == Some(2)
-    assert Some(2).or_else(lambda: Null(0)).or_else(lambda: Some(100)) == Some(2)
-    assert Null(3).or_else(lambda: Some(100)).or_else(lambda: Null(0)) == Some(100)
-    assert Null(3).or_else(lambda: Null(0)).or_else(lambda: Null(0)) == Null(0)
-
-
-def test_transpose_when_option_of_result_should_return_result_of_option() -> None:
-    nothing, res, f = "Nothing here", "No result", "foo"
-    assert Some(Result.Ok(f)).transpose() == Result.Ok(Some(f))
-    assert Some(Result.Err(nothing)).transpose() == Result.Err(nothing)
-    assert Null(Result.Ok(f)).transpose() == Result.Ok(Some(None))
-    assert Null(Result.Err(nothing)).transpose() == Result.Ok(Some(None))
-    assert Some(res).transpose() == Result.Ok(Some(res))
-    assert Null(res).transpose() == Result.Ok(Some(None))
-
-
-def test_unwrap_when_some_value_should_returns_the_value_or_throws_an_unwrap_failed_exception():
-    expected = re.escape("Called `.unwrap` on an [`Null`] value.")
-    assert Some(10).unwrap() == 10
-    with pytest.raises(UnwrapFailedError, match=expected):
-        Null("Emergency failure").unwrap()
-
-
-def test_unwrap_or_when_some_value_should_return_value_or_provided_default():
-    default_value = 42
-    assert Some(2).unwrap_or(default_value) == 2
-    assert Null("Something went wrong").unwrap_or(default_value) == 42
-
-
-def test_unwrap_or_else_when_some_value_should_return_value_or_compute_from_function():
-    assert Some(2).unwrap_or_else(lambda: 3) == 2
-    assert Null("foo").unwrap_or_else(lambda: 3) == 3
+    assert option.or_else(func) == expected
 
 
 @pytest.mark.parametrize(
@@ -142,10 +256,10 @@ def test_unwrap_or_else_when_some_value_should_return_value_or_compute_from_func
         (Null("error"), "error"),
     ],
     ids=[
-        "iter when Some with int should yield int",
-        "iter when Null with None should yield None",
-        "iter when Some with str should yield str",
-        "iter when Null with str should yield str",
+        "test_iter_when_some_with_int_should_yield_int",
+        "test_iter_when_null_with_none_should_yield_none",
+        "test_iter_when_some_with_str_should_yield_str",
+        "test_iter_when_null_with_str_should_yield_str",
     ],
 )
 def test_iter(option, expected):
@@ -161,20 +275,31 @@ def test_iter(option, expected):
         (Null("error"), "Null('error')"),
     ],
     ids=[
-        "repr when Some with int should return formatted string",
-        "repr when Null with None should return formatted string",
-        "repr when Some with str should return formatted string",
-        "repr when Null with str should return formatted string",
+        "test_repr_when_some_with_int_should_return_formatted_string",
+        "test_repr_when_null_with_none_should_return_formatted_string",
+        "test_repr_when_some_with_str_should_return_formatted_string",
+        "test_repr_when_null_with_str_should_return_formatted_string",
     ],
 )
 def test_repr(option, expected):
     assert repr(option) == expected
 
 
-def test_hash() -> None:
-    assert len({Some(1), Null("2"), Some(1), Null("2")}) == 2
-    assert len({Some(1), Some(2)}) == 2
-    assert len({Some("a"), Null("a")}) == 2
+@pytest.mark.parametrize(
+    "options, expected",
+    [
+        ({Some(1), Null("2"), Some(1), Null("2")}, 2),
+        ({Some(1), Some(2)}, 2),
+        ({Some("a"), Null("a")}, 2),
+    ],
+    ids=[
+        "test_hash_when_some_and_no_duplicates_should_return_correct_length",
+        "test_hash_when_different_some_values_should_return_correct_length",
+        "test_hash_when_some_and_null_strings_should_return_correct_length",
+    ],
+)
+def test_hash(options, expected) -> None:
+    assert len(options) == expected
 
 
 @pytest.mark.parametrize(
@@ -189,13 +314,13 @@ def test_hash() -> None:
         (Null(None), Null("error"), False),
     ],
     ids=[
-        "eq when Some with same int should return True",
-        "eq when Null with same None should return True",
-        "eq when Some with same str should return True",
-        "eq when Null with same str should return True",
-        "eq when Some and Null with same int should return False",
-        "eq when Some with different int should return False",
-        "eq when Null with different values should return False",
+        "test_eq_when_some_with_same_int_should_return_true",
+        "test_eq_when_null_with_same_none_should_return_true",
+        "test_eq_when_some_with_same_str_should_return_true",
+        "test_eq_when_null_with_same_str_should_return_true",
+        "test_eq_when_some_and_null_with_same_int_should_return_false",
+        "test_eq_when_some_with_different_int_should_return_false",
+        "test_eq_when_null_with_different_values_should_return_false",
     ],
 )
 def test_eq(option1, option2, expected):
@@ -214,13 +339,13 @@ def test_eq(option1, option2, expected):
         (Null(None), Null("error"), True),
     ],
     ids=[
-        "ne when Some with same int should return False",
-        "ne when Null with same None should return False",
-        "ne when Some with same str should return False",
-        "ne when Null with same str should return False",
-        "ne when Some and Null with same int should return True",
-        "ne when Some with different int should return True",
-        "ne when Null with different values should return True",
+        "test_ne_when_some_with_same_int_should_return_false",
+        "test_ne_when_null_with_same_none_should_return_false",
+        "test_ne_when_some_with_same_str_should_return_false",
+        "test_ne_when_null_with_same_str_should_return_false",
+        "test_ne_when_some_and_null_with_same_int_should_return_true",
+        "test_ne_when_some_with_different_int_should_return_true",
+        "test_ne_when_null_with_different_values_should_return_true",
     ],
 )
 def test_ne(option1, option2, expected):
@@ -237,12 +362,75 @@ def test_ne(option1, option2, expected):
         (1_000_000, 2, Some(500_000.0)),
     ],
     ids=[
-        "as_Null when division by zero should return Null(None)",
-        "as_Null when valid division should return Some(5.0)",
-        "as_Null when negative division should return Some(-5.0)",
-        "as_Null when zero dividend should return Some(0.0)",
-        "as_Null when large numbers should return Some(500_000.0)",
+        "test_as_null_when_division_by_zero_should_return_null",
+        "test_as_null_when_valid_division_should_return_some",
+        "test_as_null_when_negative_division_should_return_some",
+        "test_as_null_when_zero_dividend_should_return_some",
+        "test_as_null_when_large_numbers_should_return_some",
     ],
 )
 def test_as_null(a, b, expected) -> None:
     assert div(a, b) == expected
+
+
+def test_unwrap_when_some_should_return_value() -> None:
+    assert Some(10).unwrap() == 10
+
+
+def test_unwrap_when_null_should_raise_error() -> None:
+    msg = "Called `.unwrap` on an [`Null`] value."
+    with pytest.raises(UnwrapFailedError, match=re.escape(msg)):
+        Null("Emergency failure").unwrap()
+
+
+@pytest.mark.parametrize(
+    "option, default, expected",
+    [
+        (Some(2), 42, 2),
+        (Null("Something went wrong"), 42, 42),
+    ],
+    ids=[
+        "test_unwrap_or_when_some_should_return_value",
+        "test_unwrap_or_when_null_should_return_default",
+    ],
+)
+def test_unwrap_or_when_some_value_should_return_value_or_provided_default(
+    option, default, expected
+):
+    assert option.unwrap_or(default) == expected
+
+
+@pytest.mark.parametrize(
+    "option, func, expected",
+    [
+        (Some(2), lambda: 3, 2),
+        (Null("foo"), lambda: 3, 3),
+    ],
+    ids=[
+        "test_unwrap_or_else_when_some_should_return_value",
+        "test_unwrap_or_else_when_null_should_call_func_and_return_value",
+    ],
+)
+def test_unwrap_or_else_when_some_value_should_return_value_or_compute_from_function(
+    option, func, expected
+):
+    assert option.unwrap_or_else(func) == expected
+
+
+@pytest.mark.parametrize(
+    "option, func, expected",
+    [
+        (Some(2), lambda: Some(100), Some(2)),
+        (Some(2), lambda: Null(0), Some(2)),
+        (Null(3), lambda: Some(100), Some(100)),
+        (Null(3), lambda: Null(0), Null(0)),
+    ],
+    ids=[
+        "test_or_else_when_some_should_return_some",
+        "test_or_else_when_some_should_return_some_even_if_func_returns_null",
+        "test_or_else_when_null_should_call_func_and_return_some",
+        "test_or_else_when_null_should_call_func_and_return_null",
+    ],
+)
+def test_or_else_when_some_should_return_some(option, func, expected):
+    assert option.or_else(func) == expected
