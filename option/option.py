@@ -4,7 +4,10 @@ import abc
 import functools
 import typing
 
-from result import Err, Ok, Result
+from result import Err, Ok
+
+if typing.TYPE_CHECKING:
+    from result import Result
 
 T = typing.TypeVar("T")
 E = typing.TypeVar("E")
@@ -93,8 +96,8 @@ class Option(abc.ABC, typing.Generic[T, N]):
         @functools.wraps(fn)
         def inner(*args: P.args, **kwargs: P.kwargs) -> Option[T, N]:
             if (option := fn(*args, **kwargs)) is None:
-                return Option.null(None)
-            return Option.some(option)
+                return Null(None)
+            return Some(option)
 
         return inner
 
@@ -133,7 +136,7 @@ class Some(Option[T, typing.Any]):
     def filter(self, predicate: typing.Callable[[T], bool]) -> Option[T, N]:
         if predicate(self._inner_value):
             return self
-        return Option.null(typing.cast(N, None))
+        return Null(typing.cast(N, None))
 
     def is_null(self) -> typing.Literal[False]:
         return False
@@ -145,7 +148,7 @@ class Some(Option[T, typing.Any]):
         return f(self._inner_value)
 
     def map(self, f: typing.Callable[[T], U]) -> Option[U, N]:
-        return Option.some(f(self._inner_value))
+        return Some(f(self._inner_value))
 
     def map_or(self, default: U, f: typing.Callable[[T], U]) -> U:
         return f(self._inner_value)
@@ -156,10 +159,10 @@ class Some(Option[T, typing.Any]):
         return f(self._inner_value)
 
     def ok_or(self, err: E) -> Result[T, E]:
-        return Result.Ok(self._inner_value)
+        return Ok(self._inner_value)
 
     def ok_or_else(self, f: typing.Callable[[], E]) -> Result[T, E]:
-        return Result.Ok(self._inner_value)
+        return Ok(self._inner_value)
 
     def or_(self, optb: Option[T, N]) -> Option[T, N]:
         return self
@@ -170,11 +173,11 @@ class Some(Option[T, typing.Any]):
     def transpose(self) -> Result[Option[T, N], E]:
         match self._inner_value:
             case Ok(x):
-                return Result.Ok(Option.some(x))
+                return Ok(Some(x))
             case Err(e):
-                return Result.Err(e)
+                return Err(e)
             case _:
-                return Result.Ok(self)
+                return Ok(self)
 
     def unwrap(self) -> T:
         return self._inner_value
@@ -240,10 +243,10 @@ class Null(Option[typing.Any, N]):
         return default()
 
     def ok_or(self, err: E) -> Result[T, E]:
-        return Result.Err(err)
+        return Err(err)
 
     def ok_or_else(self, err: typing.Callable[[], E]) -> Result[T, E]:
-        return Result.Err(err())
+        return Err(err())
 
     def or_(self, optb: Option[T, N]) -> Option[T, N]:
         return optb
@@ -252,7 +255,7 @@ class Null(Option[typing.Any, N]):
         return f()
 
     def transpose(self) -> Result[Option[T, N], E]:
-        return Result.Ok(Option.some(typing.cast(T, None)))
+        return Ok(Some(typing.cast(T, None)))
 
     def unwrap(self) -> typing.NoReturn:
         raise UnwrapFailedError(self.UNWRAP_ERROR_MESSAGE % "unwrap")
