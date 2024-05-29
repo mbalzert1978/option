@@ -19,5 +19,5 @@ def test_pattern_matching_on_err_type() -> None:
         case Maybe(value):
             reached = True
 
-    assert value is None
+    assert value == "nay"
     assert reached
