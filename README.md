@@ -5,10 +5,6 @@ A simple Option type for Python 3 inspired by Rust, fully type annotated.
 Installation
 ============
 
-Latest release:
-
-$ pip install option
-
 Latest GitHub master branch version:
 
 $ pip install git+https://github.com/mbalzert1978/option
