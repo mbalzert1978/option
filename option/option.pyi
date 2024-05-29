@@ -43,8 +43,10 @@ class Option(typing.Generic[T, N]):
     @staticmethod
     def null(value: N) -> Option[T, N]: ...
     @staticmethod
-    def as_null(fn: typing.Callable[P, T]) -> typing.Callable[P, Option[T, N]]:
-        """Decorates a function so that it returns a `Optional<T>` instead of `T`.
+    def as_option(fn: typing.Callable[P, T]) -> typing.Callable[P, Option[T, N]]:
+        """
+        Decorates a function so that it returns a `Optional<T>` instead of `T`.
+
         # Examples:
 
         >>> @Result.as_maybe

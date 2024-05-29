@@ -89,7 +89,7 @@ class Option(abc.ABC, typing.Generic[T, N]):
         return Null(value)
 
     @staticmethod
-    def as_null(fn: typing.Callable[P, T]) -> typing.Callable[P, Option[T, N]]:
+    def as_option(fn: typing.Callable[P, T]) -> typing.Callable[P, Option[T, N]]:
         @functools.wraps(fn)
         def inner(*args: P.args, **kwargs: P.kwargs) -> Option[T, N]:
             if (option := fn(*args, **kwargs)) is None:

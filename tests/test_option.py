@@ -18,7 +18,7 @@ def parse(s: str) -> Option[float, str]:
         return Null("Number too large or too small")
 
 
-@Option.as_null
+@Option.as_option
 def div(a: int, b: int) -> float | None:
     if b == 0:
         return None
@@ -85,8 +85,8 @@ def test_is_some_and_when_some_value_should_match_predicate() -> None:
 def test_map_on_option_should_map_option_te_to_option_ue_by_applying_a_function_to_a_contained_some_value_leaving_an_null_untouched() -> (
     None
 ):
-    assert parse("5").map(lambda i: i * 2) == Some(10.0)
-    assert parse("Nothing here").map(lambda i: i * 2) == Null("Invalid format")
+    assert Some(10).map(lambda i: i * 2) == Some(20)
+    assert Null("Nothing here").map(lambda i: i * 2) == Null("Nothing here")
 
 
 def test_map_or_when_option_should_apply_a_function_to_contained_value_or_default():
