@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "option"
-version = "0.1.0"
+version = "0.1.1a0"
 description = "A simple Option type for Python 3 inspired by Rust, fully type annotated."
 authors = ["Markus Iorio <mbalzert@gmail.com>"]
 readme = "README.md"
