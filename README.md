@@ -12,7 +12,7 @@ $ pip install git+https://github.com/mbalzert1978/option
 Summary
 =======
 
-The idea is that a option can be either Some(value) or Maybe(None), with a way to differentiate between the two. Some and Maybe are both classes encapsulating an arbitrary value.
+The idea is that a option can be either Some(value) or Null(None), with a way to differentiate between the two. Some and Null are both classes encapsulating an arbitrary value.
 
 API
 ===
@@ -21,12 +21,12 @@ Creating an instance:
 ``` python
 >>> from option import Some, Maybe
 >>> value = Some(42)
->>> no_value = Maybe(None)
-# Checking whether a result is Some or Maybe:
+>>> no_value = Null(None)
+# Checking whether a result is Some or Null:
 
 >>> value.is_some()
 True
->>> no_value.is_none()
+>>> no_value.is_null()
 True
 
 # Accessing the Value:
@@ -47,9 +47,9 @@ default_value = no_value.unwrap_or(0)
 
 >>> transformed = value.map(lambda x: x * 2)
 Some(84)
-# Mapping a Maybe does nothing:
+# Mapping a Null does nothing:
 transformed = no_value.map(lambda x: x * 2)
-Maybe(None)
+Null(None)
 ```
 
 Contributing
