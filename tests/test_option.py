@@ -8,41 +8,17 @@ from result import Result
 from option import Null, Option, Some, UnwrapFailedError
 
 
-def parse(s: str) -> Option[float, str]:
-    try:
-        i = float(s)
-        return Some(i)
-    except ValueError:
-        return Null("Invalid format")
-    except OverflowError:
-        return Null("Number too large or too small")
+@Option.as_option
+def div(a: int, b: int) -> float | None:
+    return None if b == 0 else a / b
 
 
 @Option.as_option
-def div(a: int, b: int) -> float | None:
-    if b == 0:
-        return None
-    return a / b
-
-
-def get100() -> Option[int, int]:
-    return Some(100)
-
-
-def get_nothing() -> Option[int, int]:
-    return Null(0)
-
-
-def is_even(x: int) -> bool:
-    return x % 2 == 0
-
-
-def sq_then_to_string(x: int) -> Option[str, str]:
+def sq_then_to_string(x: int) -> str | None:
     try:
-        sq = x * x
-        return Some(str(sq))
+        return str(x**2)
     except Exception:
-        return Null("Overflowed")
+        return None
 
 
 def test_and_then_when_value_should_call_the_given_function_or_return_none() -> None:
@@ -61,9 +37,9 @@ def test_expect_when_value_should_return_the_value_or_throws_an_error_with_the_g
 def test_option_filter_when_predicate_is_called_should_return_some_if_true_and_null_if_false() -> (
     None
 ):
-    assert Some(10).filter(is_even) == Some(10)
-    assert Some(15).filter(is_even) == Null(None)
-    assert Null(10).filter(is_even) == Null(10)
+    assert Some(10).filter(lambda x: x % 2 == 0) == Some(10)
+    assert Some(15).filter(lambda x: x % 2 == 0) == Null(None)
+    assert Null(10).filter(lambda x: x % 2 == 0) == Null(10)
 
 
 def test_is_null_when_null_value_should_return_true() -> None:
@@ -77,16 +53,17 @@ def test_is_some_when_value_should_return_true() -> None:
 
 
 def test_is_some_and_when_some_value_should_match_predicate() -> None:
-    assert Some(10).is_some_and(is_even)
-    assert not Some(15).is_some_and(is_even)
-    assert not Null("Something went wrong").is_some_and(is_even)
+    assert Some(10).is_some_and(lambda x: x % 2 == 0)
+    assert not Some(15).is_some_and(lambda x: x % 2 == 0)
+    assert not Null("Something went wrong").is_some_and(lambda x: x % 2 == 0)
 
 
 def test_map_on_option_should_map_option_te_to_option_ue_by_applying_a_function_to_a_contained_some_value_leaving_an_null_untouched() -> (
     None
 ):
+    msg = "Nothing here"
     assert Some(10).map(lambda i: i * 2) == Some(20)
-    assert Null("Nothing here").map(lambda i: i * 2) == Null("Nothing here")
+    assert Null(msg).map(lambda i: i * 2) == Null(msg)
 
 
 def test_map_or_when_option_should_apply_a_function_to_contained_value_or_default():
@@ -101,15 +78,15 @@ def test_map_or_else_when_option_should_apply_a_function_to_contained_value_or_a
 
 
 def test_option_ok_or_when_called_should_map_option_to_result() -> None:
-    assert Some(10).ok_or("Something went wrong") == Result.Ok(10)
-    assert Null(10).ok_or("Something went wrong") == Result.Err("Something went wrong")
+    msg = "Something went wrong"
+    assert Some(10).ok_or(msg) == Result.Ok(10)
+    assert Null(10).ok_or(msg) == Result.Err(msg)
 
 
 def test_option_ok_or_else_when_called_should_map_some_to_ok_and_null_to_err() -> None:
-    assert Some(10).ok_or_else(lambda: "Something went wrong") == Result.Ok(10)
-    assert Null(10).ok_or_else(lambda: "Something went wrong") == Result.Err(
-        "Something went wrong"
-    )
+    msg = "Something went wrong"
+    assert Some(10).ok_or_else(lambda: msg) == Result.Ok(10)
+    assert Null(10).ok_or_else(lambda: msg) == Result.Err(msg)
 
 
 def test_option_or_when_called_should_return_option_if_contained_value_otherwise_optb() -> (
@@ -122,19 +99,20 @@ def test_option_or_when_called_should_return_option_if_contained_value_otherwise
 
 
 def test_or_else_when_null_should_call_the_given_function_or_return_the_some_value():
-    assert Some(2).or_else(get100).or_else(get100) == Some(2)
-    assert Some(2).or_else(get_nothing).or_else(get100) == Some(2)
-    assert Null(3).or_else(get100).or_else(get_nothing) == Some(100)
-    assert Null(3).or_else(get_nothing).or_else(get_nothing) == Null(0)
+    assert Some(2).or_else(lambda: Some(100)).or_else(lambda: Some(100)) == Some(2)
+    assert Some(2).or_else(lambda: Null(0)).or_else(lambda: Some(100)) == Some(2)
+    assert Null(3).or_else(lambda: Some(100)).or_else(lambda: Null(0)) == Some(100)
+    assert Null(3).or_else(lambda: Null(0)).or_else(lambda: Null(0)) == Null(0)
 
 
 def test_transpose_when_option_of_result_should_return_result_of_option() -> None:
-    assert Some(Result.Ok("foo")).transpose() == Result.Ok(Some("foo"))
-    assert Some(Result.Err("Nothing here")).transpose() == Result.Err("Nothing here")
-    assert Null(Result.Ok("foo")).transpose() == Result.Ok(Some(None))
-    assert Null(Result.Err("Nothing here")).transpose() == Result.Ok(Some(None))
-    assert Some("Not a Result").transpose() == Result.Ok(Some("Not a Result"))
-    assert Null("Not a Result").transpose() == Result.Ok(Some(None))
+    nothing, res, f = "Nothing here", "No result", "foo"
+    assert Some(Result.Ok(f)).transpose() == Result.Ok(Some(f))
+    assert Some(Result.Err(nothing)).transpose() == Result.Err(nothing)
+    assert Null(Result.Ok(f)).transpose() == Result.Ok(Some(None))
+    assert Null(Result.Err(nothing)).transpose() == Result.Ok(Some(None))
+    assert Some(res).transpose() == Result.Ok(Some(res))
+    assert Null(res).transpose() == Result.Ok(Some(None))
 
 
 def test_unwrap_when_some_value_should_returns_the_value_or_throws_an_unwrap_failed_exception():
