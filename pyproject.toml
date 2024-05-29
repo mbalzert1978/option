@@ -8,7 +8,7 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-result = {git = "https://github.com/mbalzert1978/result.git"}
+result = { git = "https://github.com/mbalzert1978/result.git" }
 
 
 [tool.poetry.group.dev.dependencies]
@@ -27,7 +27,11 @@ build-backend = "poetry.core.masonry.api"
 omit = ["tests/*", "*/__init__.py"]
 
 [tool.coverage.report]
-exclude_lines = ["pragma: no cover", "raise NotImplementedError"]
+exclude_lines = [
+  "pragma: no cover",
+  "raise NotImplementedError",
+  "if typing.TYPE_CHECKING:",
+]
 
 [tool.ruff]
 exclude = [
