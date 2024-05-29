@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from option import Maybe, Some
+from option import Null, Some
 
 
 def test_pattern_matching_on_ok_type() -> None:
@@ -14,9 +14,9 @@ def test_pattern_matching_on_ok_type() -> None:
 
 
 def test_pattern_matching_on_err_type() -> None:
-    n = Maybe("nay")
+    n = Null("nay")
     match n:
-        case Maybe(value):
+        case Null(value):
             reached = True
 
     assert value == "nay"

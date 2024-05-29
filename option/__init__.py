@@ -1,7 +1,7 @@
-from .option import Maybe, Option, OptionError, Some, UnwrapFailedError
+from .option import Null, Option, OptionError, Some, UnwrapFailedError
 
 __all__ = [
-    "Maybe",
+    "Null",
     "Option",
     "OptionError",
     "Some",

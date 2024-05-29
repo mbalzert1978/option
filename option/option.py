@@ -37,7 +37,7 @@ class Option(abc.ABC, typing.Generic[T, N]):
     def filter(self, predicate: typing.Callable[[T], bool]) -> Option[T, N]: ...
 
     @abc.abstractmethod
-    def is_none(self) -> bool: ...
+    def is_null(self) -> bool: ...
 
     @abc.abstractmethod
     def is_some(self) -> bool: ...
@@ -85,25 +85,15 @@ class Option(abc.ABC, typing.Generic[T, N]):
         return Some(value)
 
     @staticmethod
-    def none(value: N) -> Option[typing.Any, N]:
-        return Maybe(value)
+    def null(value: N) -> Option[typing.Any, N]:
+        return Null(value)
 
     @staticmethod
-    def as_maybe(fn: typing.Callable[P, T]) -> typing.Callable[P, Option[T, N]]:
-        """Decorates a function so that it returns a `Optional<T>` instead of `T`.
-        # Examples:
-
-        >>> @Result.as_maybe
-        >>> def div(a: int, b: int) -> float:
-        ...     return a / b
-        >>> assert div(10, 2) == 5.0
-        >>> assert div(10, 0) is None
-        """
-
+    def as_null(fn: typing.Callable[P, T]) -> typing.Callable[P, Option[T, N]]:
         @functools.wraps(fn)
         def inner(*args: P.args, **kwargs: P.kwargs) -> Option[T, N]:
             if (option := fn(*args, **kwargs)) is None:
-                return Option.none(None)
+                return Option.null(None)
             return Option.some(option)
 
         return inner
@@ -143,9 +133,9 @@ class Some(Option[T, typing.Any]):
     def filter(self, predicate: typing.Callable[[T], bool]) -> Option[T, N]:
         if predicate(self._inner_value):
             return self
-        return Option.none(typing.cast(N, None))
+        return Option.null(typing.cast(N, None))
 
-    def is_none(self) -> typing.Literal[False]:
+    def is_null(self) -> typing.Literal[False]:
         return False
 
     def is_some(self) -> typing.Literal[True]:
@@ -196,11 +186,11 @@ class Some(Option[T, typing.Any]):
         return self._inner_value
 
 
-class Maybe(Option[typing.Any, N]):
+class Null(Option[typing.Any, N]):
     __slots__ = ("_inner_value",)
     __match_args__ = ("_inner_value",)
 
-    UNWRAP_ERROR_MESSAGE = "Called `.%s` on an [`Maybe`] value."
+    UNWRAP_ERROR_MESSAGE = "Called `.%s` on an [`Null`] value."
 
     def __iter__(self) -> typing.Iterator[N]:
         yield self._inner_value
@@ -229,7 +219,7 @@ class Maybe(Option[typing.Any, N]):
     def filter(self, predicate: typing.Callable[[T], bool]) -> Option[T, N]:
         return self
 
-    def is_none(self) -> typing.Literal[True]:
+    def is_null(self) -> typing.Literal[True]:
         return True
 
     def is_some(self) -> typing.Literal[False]:
