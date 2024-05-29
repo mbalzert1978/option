@@ -434,3 +434,26 @@ def test_unwrap_or_else_when_some_value_should_return_value_or_compute_from_func
 )
 def test_or_else_when_some_should_return_some(option, func, expected):
     assert option.or_else(func) == expected
+
+
+@pytest.mark.parametrize(
+    "option, expected",
+    [
+        (Some(Ok(5)), Ok(Some(5))),
+        (Some(Err("error")), Err("error")),
+        (Null(None), Ok(Some(None))),
+        (Some(Ok(None)), Ok(Some(None))),
+        (Null(Err("error")), Ok(Some(None))),
+        (Some(5), Ok(Some(5))),
+    ],
+    ids=[
+        "transpose_when_some_ok_should_return_ok_with_some_value",
+        "transpose_when_some_err_should_return_err",
+        "transpose_when_null_none_should_return_ok_none",
+        "transpose_when_some_ok_none_should_return_ok_with_some_none",
+        "transpose_when_null_err_should_return_ok_none",
+        "transpose_when_some_value_should_return_ok_some_value",
+    ],
+)
+def test_transpose_with_result(option, expected):
+    assert option.transpose() == expected
